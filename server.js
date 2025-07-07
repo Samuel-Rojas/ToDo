@@ -8,6 +8,10 @@ app.use(express.json());
 
 app.use(cors());
 
+app.get('/', (req, res) => {
+  res.send('Welcome to the To-Do Backend');
+});
+
 app.get('/tasks', (req, res) => {
     db.all('SELECT * FROM tasks', (err, rows) => {
         if (err) {
@@ -33,7 +37,7 @@ app.post('/tasks', (req, res) => {
 });
 
 app.put('/tasks/:id', (req, res) => {
-    const { id } = Number(req.params.id);
+    const id = Number(req.params.id);
 
     const { text, done } = req.body;
 

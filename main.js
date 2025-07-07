@@ -4,54 +4,63 @@ const addBtn = document.getElementById("add-task");
 const themeToggle = document.getElementById("theme-toggle");
 const bodyEl = document.body;
 
+userTask.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        addBtn.click();
+    }
+})
+
+let tasks = [];
+
 async function fetchTasks() {
     const res = await fetch("http://localhost:3000/tasks");
 
-    if(!res.ok) {
+    if (!res.ok) {
         throw new Error("Failed to fetch tasks: " + res.statusText);
+    } else {
+        console.log("Success at fetching tasks");
     }
 
     const data = await res.json();
 
     tasks = data;
-    renderTasks();
+    tasks = tasks.map(t => ({ ...t, isEditing: false }));
+
+    taskDiv.innerHTML = "";
+
+    tasks.forEach(task => {
+        const li = createTaskElement(task);
+        taskDiv.appendChild(li);
+    })
+
+    
 }
 
 async function addTask(text) {
     const res = await fetch('http://localhost:3000/tasks', {
         method: 'POST',
         headers: {
-           'Content-Type': "application/json" 
+            'Content-Type': "application/json"
         },
-        body: JSON.stringify({text })
+        body: JSON.stringify({ text })
     });
 
-    if(!res.ok) {
-        throw new Error("Failed to add task: " + res.statusText);
-    }
 
-    const newTask = await res.json();
-
-    tasks.push({
-        id: newTask.id,
-        text: newTask.text,
-        done: newTask.done,
-        isEditing: false
-    });
-    renderTasks();
+    return await res.json();
 }
 
 
-async function editTask(id, { text, done }){
-    const res = await fetch("http://localhost:3000/tasks/${id}", {
+async function editTask(id, { text, done }) {
+    const res = await fetch(`http://localhost:3000/tasks/${id}`, {
         method: "PUT",
         headers: {
             'Content-Type': "application/json"
         },
-        body: JSON.stringify({text, done})
+        body: JSON.stringify({ text, done })
     });
 
-    if(!res.ok){
+    if (!res.ok) {
         throw new Error("Failed to edit task: " + res.statusText);
     }
 
@@ -59,51 +68,50 @@ async function editTask(id, { text, done }){
 
     const taskIndex = tasks.findIndex(t => t.id === id);
 
-    if(taskIndex > -1) {
+    if (taskIndex > -1) {
         tasks[taskIndex].text = updated.text;
         tasks[taskIndex].done = updated.done;
-
         tasks[taskIndex].isEditing = false;
     }
 
-    renderTasks();
 }
 
-async function deleteTask(id){
+async function deleteTask(id) {
     // TODO:
-  //   • const res = await fetch(`http://localhost:3000/tasks/${id}`, { method: 'DELETE' })
-  //   • if (!res.ok) throw
-  //   • remove the task from tasks[] (e.g. tasks = tasks.filter(t=>t.id!==id))
-  //   • renderTasks()
+    //   • const res = await fetch(`http://localhost:3000/tasks/${id}`, { method: 'DELETE' })
+    //   • if (!res.ok) throw
+    //   • remove the task from tasks[] (e.g. tasks = tasks.filter(t=>t.id!==id))
+    //   • renderTasks()
 
-  const res = await fetch(`http://localhost:3000/tasks/${id}`,{
-    method: "DELETE",
-    "headers": {
-        "Content-Type": "application/json",
-    },
-  });
+    const res = await fetch(`http://localhost:3000/tasks/${id}`, {
+        method: "DELETE",
+        "headers": {
+            "Content-Type": "application/json",
+        },
+    });
 
-  if(!res.ok){
-    throw new Error("Failed to delete task" + res.statusText);
-  }
+    if (!res.ok) {
+        throw new Error("Failed to delete task" + res.statusText);
+    }
 
-  tasks = tasks.filter(t => t.id !== id);
+    tasks = tasks.filter(t => t.id !== id);
 
-  renderTasks();
 
 }
-
-
-fetchTasks().catch(console.error);
 
 addBtn.addEventListener("click", async () => {
     const text = userTask.value.trim();
-    if(!text) { 
+    if (!text) {
         return;
     }
     userTask.value = '';
     try {
-        await addTask(text);
+        const newTask = await addTask(text);
+        newTask.isEditing = false;
+        tasks.push(newTask);
+
+        const li = createTaskElement(newTask);
+        taskDiv.appendChild(li);
     } catch (err) {
         console.error(err);
         alert(err.message);
@@ -113,20 +121,9 @@ addBtn.addEventListener("click", async () => {
 
 
 const savedTheme = localStorage.getItem("theme");
-if (savedTheme === "dark"){
+if (savedTheme === "dark") {
     bodyEl.classList.add('dark-mode');
     themeToggle.textContent = "☀️Light Mode";
-}
-
-let tasks = [];
-
-function loadFromStorage() {
-    const saved = localStorage.getItem("myTodoList");
-    if(saved) tasks = JSON.parse(saved);
-}
-
-function saveToStorage() {
-    localStorage.setItem("myTodoList", JSON.stringify(tasks))
 }
 
 themeToggle.addEventListener("click", () => {
@@ -135,67 +132,150 @@ themeToggle.addEventListener("click", () => {
     localStorage.setItem("theme", isDark ? "dark" : "light");
 })
 
-function renderTasks () {
-    taskDiv.innerHTML = "";
+// function renderTasks() {
+//     taskDiv.innerHTML = "";
 
-    tasks.forEach((task) => {
-        const li = document.createElement("li");
-        const buttonDiv = document.createElement("button");
-        buttonDiv.classList.add("button-div");
-        li.dataset.id = task.id;
-        let textEl;
+//     tasks.forEach((task) => {
+//         const li = document.createElement("li");
+//         const buttonDiv = document.createElement("button");
+//         li.classList.add("task-item");
+//         li.classList.add("fade-in");
 
-        if(task.isEditing) {
-            textEl = document.createElement('input');
-            textEl.value = task.text;
-            textEl.classList.add("edit-input");
-        } else {
-            textEl = document.createElement("span");
-            textEl.textContent = task.text;
-        }
+//         li.addEventListener("animationend", () => {
+//             li.classList.remove("fade-in");
+//         })
+//         buttonDiv.classList.add("button-div");
+//         li.dataset.id = task.id;
+//         let textEl;
 
-        const editBtn = document.createElement("button");
-        editBtn.textContent = task.isEditing ? "Save" : "Edit";
-        editBtn.classList.add("edit-button");
-        editBtn.addEventListener("click", async () => {
-            if(task.isEditing) {
-                const newText = textEl.value.trim();
-                if(newText) task.text = newText;
-                task.isEditing = false;
-                try {
-                    await editTask()
-                } catch (err) {
-                    console.error(err);
-                    alert(err.message);
-                } 
-            } else {
-                task.isEditing = true;
-            }
-            saveToStorage();
-            renderTasks();
-        });
+//         if (task.isEditing) {
+//             textEl = document.createElement('input');
+//             textEl.value = task.text;
+//             textEl.classList.add("edit-input");
+//         } else {
+//             textEl = document.createElement("span");
+//             textEl.textContent = task.text;
+//         }
 
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "Delete";
-        deleteBtn.classList.add("delete-button");
-        deleteBtn.addEventListener("click", async () => {
+//         const editBtn = document.createElement("button");
+//         editBtn.textContent = task.isEditing ? "Save" : "Edit";
+//         editBtn.classList.add("edit-button");
+//         editBtn.addEventListener("click", async () => {
+//             if (task.isEditing) {
+//                 const newText = textEl.value.trim();
+//                 if (newText) {
+//                     try {
+//                         await editTask(task.id, { text: newText, done: task.done });
+//                     } catch (err) {
+//                         console.error(err);
+//                         alert(err.message);
+//                     }
+//                 }
+//             } else {
+//                 task.isEditing = true;
+//             }
+//             renderTasks();
+//         });
+
+//         const deleteBtn = document.createElement("button");
+//         deleteBtn.textContent = "Delete";
+//         deleteBtn.classList.add("delete-button");
+//         deleteBtn.addEventListener("click", async () => {
+//             try {
+//                 await deleteTask(task.id);
+//             } catch (err) {
+//                 console.error(err);
+//                 alert(err.message);
+//             }
+//             renderTasks();
+//         })
+//         buttonDiv.append(editBtn, deleteBtn);
+//         li.append(textEl, buttonDiv);
+//         taskDiv.appendChild(li);
+//     });
+
+// }
+
+function createTaskElement(task) {
+    const li = document.createElement("li");
+    li.dataset.id = task.id
+    li.classList.add("task-item", "fade-in");
+
+    let textEl;
+    if (task.isEditing) {
+        textEl = document.createElement("input");
+        textEl.value = task.text;
+        textEl.classList.add("edit-input");
+    } else {
+        textEl = document.createElement("span");
+        textEl.textContent = task.text;
+    }
+
+    const editBtn = document.createElement("button");
+    editBtn.classList.add("edit-button");
+    editBtn.textContent = task.isEditing ? "Save" : "Edit";
+    editBtn.addEventListener("click", async () => {
+        if (task.isEditing) {
+            const newText = textEl.value.trim();
+            if (!newText) return;
             try {
-                await deleteTask(id);
-            } catch (err){
+                const updated = await editTask(task.id, { text: newText, done: task.done });
+                task.text = updated.text;
+                task.isEditing = false;
+
+                const span = document.createElement("span");
+                span.textContent = updated.text;
+                li.replaceChild(span, textEl);
+                textEl = span;
+                editBtn.textContent = "Edit";
+            } catch (err) {
                 console.error(err);
                 alert(err.message);
             }
-            saveToStorage();
-            renderTasks();
-        })
-        buttonDiv.append(editBtn, deleteBtn);
-        li.append(textEl, buttonDiv);
-        taskDiv.appendChild(li);
+        } else {
+            task.isEditing = true;
+            const input = document.createElement("input");
+            input.value = task.text;
+            input.classList.add("edit-input");
+            li.replaceChild(input, textEl);
+            textEl = input;
+            editBtn.textContent = "Save";
+            input.focus();
+        }
     });
-    
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.classList.add("delete-button");
+    deleteBtn.textContent = "Delete";
+    deleteBtn.addEventListener("click", async () => {
+        if (!confirm("Delete this task?")) return;
+        try {
+            await deleteTask(task.id);
+            li.remove();                        // remove this <li> only
+        } catch (err) {
+            console.error(err);
+            alert(err.message);
+        }
+    });
+
+    const buttonDiv = document.createElement("div");
+    buttonDiv.classList.add("button-div");
+    buttonDiv.append(editBtn, deleteBtn);
+
+    li.append(textEl, buttonDiv);
+
+    // REMOVE the animation class after it finishes
+    li.addEventListener("animationend", () => {
+        li.classList.remove("fade-in");
+    });
+
+    return li;
 }
 
-loadFromStorage();
-renderTasks();
 
 
+
+fetchTasks().catch(err => {
+        console.error(err);
+        alert("could not fetch tasks from the backend.");
+    })
