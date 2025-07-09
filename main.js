@@ -47,6 +47,8 @@ async function addTask(text) {
     });
 
 
+
+
     return await res.json();
 }
 
@@ -72,6 +74,7 @@ async function editTask(id, { text, done }) {
         tasks[taskIndex].text = updated.text;
         tasks[taskIndex].done = updated.done;
         tasks[taskIndex].isEditing = false;
+    
     }
 
 }
@@ -132,70 +135,6 @@ themeToggle.addEventListener("click", () => {
     localStorage.setItem("theme", isDark ? "dark" : "light");
 })
 
-// function renderTasks() {
-//     taskDiv.innerHTML = "";
-
-//     tasks.forEach((task) => {
-//         const li = document.createElement("li");
-//         const buttonDiv = document.createElement("button");
-//         li.classList.add("task-item");
-//         li.classList.add("fade-in");
-
-//         li.addEventListener("animationend", () => {
-//             li.classList.remove("fade-in");
-//         })
-//         buttonDiv.classList.add("button-div");
-//         li.dataset.id = task.id;
-//         let textEl;
-
-//         if (task.isEditing) {
-//             textEl = document.createElement('input');
-//             textEl.value = task.text;
-//             textEl.classList.add("edit-input");
-//         } else {
-//             textEl = document.createElement("span");
-//             textEl.textContent = task.text;
-//         }
-
-//         const editBtn = document.createElement("button");
-//         editBtn.textContent = task.isEditing ? "Save" : "Edit";
-//         editBtn.classList.add("edit-button");
-//         editBtn.addEventListener("click", async () => {
-//             if (task.isEditing) {
-//                 const newText = textEl.value.trim();
-//                 if (newText) {
-//                     try {
-//                         await editTask(task.id, { text: newText, done: task.done });
-//                     } catch (err) {
-//                         console.error(err);
-//                         alert(err.message);
-//                     }
-//                 }
-//             } else {
-//                 task.isEditing = true;
-//             }
-//             renderTasks();
-//         });
-
-//         const deleteBtn = document.createElement("button");
-//         deleteBtn.textContent = "Delete";
-//         deleteBtn.classList.add("delete-button");
-//         deleteBtn.addEventListener("click", async () => {
-//             try {
-//                 await deleteTask(task.id);
-//             } catch (err) {
-//                 console.error(err);
-//                 alert(err.message);
-//             }
-//             renderTasks();
-//         })
-//         buttonDiv.append(editBtn, deleteBtn);
-//         li.append(textEl, buttonDiv);
-//         taskDiv.appendChild(li);
-//     });
-
-// }
-
 function createTaskElement(task) {
     const li = document.createElement("li");
     li.dataset.id = task.id
@@ -255,6 +194,7 @@ function createTaskElement(task) {
         } catch (err) {
             console.error(err);
             alert(err.message);
+
         }
     });
 
